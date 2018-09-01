@@ -27,7 +27,7 @@ class Test(Resource):
     <meta charset="UTF-8">
 </head>
 <body>
-    <form enctype="multipart/form-data" action="http://localhost:5000/" method="post">
+    <form enctype="multipart/form-data" method="post">
         <input name="image" type="file" />
         <input type="submit" />
     </form>
