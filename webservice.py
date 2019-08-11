@@ -3,7 +3,7 @@ import cv2
 import face_recognition
 import numpy as np
 from PIL import Image
-from flask import Flask, request, Response
+from flask import Flask, request, Response, json
 from flask_restful import Resource, Api
 
 face_locations = []
@@ -19,9 +19,17 @@ def generate_name():
 app = Flask(__name__)
 api = Api(app)
 
+@app.route('/', methods=['GET'])
+def get_home():
+    test = Test()
+    return test.get()
+
 class Test(Resource):
     def get(self):
-        html = """<!DOCTYPE html>
+        with open("/opt/www/face.html") as f:
+            html = f.read()
+
+        html2 = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -59,14 +67,15 @@ class Test(Resource):
             font = cv2.FONT_HERSHEY_PLAIN
             cv2.putText(frame, name, (left + 6, bottom - 3), font, 1.0, (255, 255, 255), 1)
 
-        new_image = Image.fromarray(frame)
+        return Response(json.dumps({"faces":face_locations, "names": face_names}), mimetype='application/json')
+        #new_image = Image.fromarray(frame)
 
-        with io.BytesIO() as output:
-            new_image.save(output, 'png')
-            data = output.getvalue()
-        return Response(data, mimetype='image/jpeg')
+        #with io.BytesIO() as output:
+        #    new_image.save(output, 'png')
+        #    data = output.getvalue()
+        #return Response(data, mimetype='image/jpeg')
 
 api.add_resource(Test, '/')
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+#if __name__ == '__main__':
+#    app.run(host='0.0.0.0')

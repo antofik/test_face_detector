@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Web Camera</title>
+    <style>
+        #myOnlineCamera video{width:640px;height:480px;margin:15px;float:left;}
+        #myOnlineCamera canvas{display:none;width:640px;height:480px;margin:15px;float:left;}
+        #myOnlineCamera button{clear:both;margin:30px;}
+	svg{
+	    position: absolute;
+		top: 22px;
+		left:22px;
+		width: 800px;
+		height: 600px;
+	}
+	rect{
+	    stroke: red;
+	    stoke-width: 1px;	
+            fill:transparent;
+	}
+	textarea{
+		width: 400px;
+		height: 400px;
+	}
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    
+</head>
+<body>
+    <div id="myOnlineCamera">
+        <video></video>
+	<svg id='svg'>
+		<rect x="0" y="0" width="100" height="100" ></rect>
+	</svg>
+        <canvas></canvas>
+	<button class="takephoto">Capture</button> <br/>
+        <img id='result' />
+	
+    </div>
+    <textarea id="text"></textarea>
+
+<script>
+
+var videoObj    = { "video": true },
+    errBack        = function(error){
+        // alert("Video capture error: ", error.code);
+    };
+
+// Ask the browser for permission to use the Webcam
+if(navigator.getUserMedia){                    // Standard
+    navigator.getUserMedia(videoObj, startWebcam, errBack);
+}else if(navigator.webkitGetUserMedia){        // WebKit
+    navigator.webkitGetUserMedia(videoObj, startWebcam, errBack);
+}else if(navigator.mozGetUserMedia){        // Firefox
+    navigator.mozGetUserMedia(videoObj, startWebcam, errBack);
+};
+
+function startWebcam(stream){
+
+    var myOnlineCamera    = document.getElementById('myOnlineCamera'),
+        video            = myOnlineCamera.querySelector('video'),
+        canvas            = myOnlineCamera.querySelector('canvas');
+
+    video.width = video.offsetWidth;
+
+    if(navigator.getUserMedia){                    // Standard
+        video.srcObject = stream;
+        video.play();
+    }else if(navigator.webkitGetUserMedia){        // WebKit
+        video.src = window.webkitURL.createObjectURL(stream);
+        video.play();
+    }else if(navigator.mozGetUserMedia){        // Firefox
+        video.src = window.URL.createObjectURL(stream);
+        video.play();
+    };
+
+    $('.takephoto').click(function(){
+ 	capture();
+    });
+function capture() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob(function(blob) {           
+	console.log(blob); 
+        var data = new FormData();
+        data.append("image", blob, "image.png");
+        var xhr = new XMLHttpRequest();
+	xhr.open("POST", "/", true);
+//	xhr.responseType = "arraybuffer";
+	xhr.onload = function(e){
+	    //console.log('xhr response', this.response);
+	    //var arr = new Uint8Array(this.response);
+	    //var blob = new Blob([arr], {type:'image/png'});
+	    //$('img')[0].src = URL.createObjectURL(blob);
+            obj = JSON.parse(this.response);
+		console.log(obj);
+		document.getElementById("text").textContent = JSON.stringify(obj,null,2);
+
+		var svgns = "http://www.w3.org/2000/svg";
+	    for(var i=0;i<obj.names.length;i++){
+		var rect = document.createElementNS(svgns, 'rect');
+		var f = obj.faces[i];
+		var top = f[0]; var right = f[1]; var bottom = f[2]; var left = f[3];
+	        rect.setAttributeNS(null, 'x', left);
+	        rect.setAttributeNS(null, 'y', top);
+	        rect.setAttributeNS(null, 'height', bottom-top);
+	        rect.setAttributeNS(null, 'width', right-left);
+		var svg = document.getElementsByTagName('svg')[0]
+		while(svg.firstChild) svg.removeChild(svg.firstChild);
+		svg.appendChild(rect); 
+
+		data.append("data", JSON.stringify(obj));
+	    }
+	    
+	};
+	xhr.send(data);
+	}); 
+};
+
+    setInterval(capture, 2000);
+};
+
+
+</script>

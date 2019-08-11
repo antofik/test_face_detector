@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Web Camera</title>
+    <style>
+        #myOnlineCamera video{width:320px;height:240px;margin:15px;float:left;}
+        #myOnlineCamera canvas{width:320px;height:240px;margin:15px;float:left;}
+        #myOnlineCamera button{clear:both;margin:30px;}
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    
+</head>
+<body>
+
+    <div id="myOnlineCamera">
+        <video controls autoplay></video>
+        <canvas></canvas>
+        <button class="takephoto">Take Photo!</button>
+    </div>
+
+<script>
+
+var videoObj    = { "video": true },
+    errBack        = function(error){
+        // alert("Video capture error: ", error.code);
+    };
+
+// Ask the browser for permission to use the Webcam
+if(navigator.getUserMedia){                    // Standard
+    navigator.getUserMedia(videoObj, startWebcam, errBack);
+}else if(navigator.webkitGetUserMedia){        // WebKit
+    navigator.webkitGetUserMedia(videoObj, startWebcam, errBack);
+}else if(navigator.mozGetUserMedia){        // Firefox
+    navigator.mozGetUserMedia(videoObj, startWebcam, errBack);
+};
+
+function startWebcam(stream){
+
+    var myOnlineCamera    = document.getElementById('myOnlineCamera'),
+        video            = myOnlineCamera.querySelector('video'),
+        canvas            = myOnlineCamera.querySelector('canvas');
+
+    video.width = video.offsetWidth;
+
+    if(navigator.getUserMedia){                    // Standard
+        video.srcObject = stream;
+        video.play();
+    }else if(navigator.webkitGetUserMedia){        // WebKit
+        video.src = window.webkitURL.createObjectURL(stream);
+        video.play();
+    }else if(navigator.mozGetUserMedia){        // Firefox
+        video.src = window.URL.createObjectURL(stream);
+        video.play();
+    };
+
+    $('.takephoto').click(function(){
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob(function(blob) {            
+            var data = new FormData();
+            data.append("image", blob, "image.png");
+            $.ajax({
+                url: "http://algo.pw:5000/",
+                method: "POST",
+                data: data,
+                processData: false,
+                contentType: false,                
+            }).done(function(response) {
+                console.log("response", response);
+            });
+        });
+    });
+};
+
+</script>
